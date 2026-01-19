@@ -1,9 +1,92 @@
 # KDB+ Market Microstructure Study
 
 [![KDB+](https://img.shields.io/badge/KDB%2B-4.0-blue)](https://kx.com)
+[![Python](https://img.shields.io/badge/Python-3.x-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A production-grade KDB+/q framework for analyzing bid-ask spreads, market maker behavior, and microstructure dynamics on **billion+ quote datasets**.
+A production-grade KDB+/q framework for analyzing bid-ask spreads, market maker behavior, and microstructure dynamics on **10+ million quote datasets** (scalable to billions).
+
+---
+
+## 📊 Analysis Results (10 Million Quotes)
+
+### Bid-Ask Spread by Symbol
+
+![Spread Analysis](plots/spread_analysis.png)
+
+**Interpretation:**
+- **BAC (Bank of America)** has the widest spread (9.9 bps) - typical for lower-priced stocks
+- **NVDA** has the tightest spread (0.4 bps) - highly liquid, heavy HFT activity
+- **META, GS, MSFT** all under 1 bps - institutional-grade liquidity
+- **AAPL, TSLA, GOOGL** around 1.4-2.0 bps - retail-friendly but still tight
+
+> **Trading Insight**: Spread in basis points normalizes for price differences. A $0.03 spread on a $35 stock (BAC) costs more relatively than on a $875 stock (NVDA).
+
+---
+
+### Kyle's Lambda (Price Impact)
+
+![Kyle's Lambda](plots/kyle_lambda.png)
+
+**Interpretation:**
+- **Positive λ (Green)**: Trades have *permanent* price impact → informed trading detected
+  - MSFT (3.9×10⁻⁵): Highest information content in trades
+  - AAPL (2.1×10⁻⁵): Significant directional signal
+  
+- **Negative λ (Red)**: Prices *mean-revert* after trades → noise trading dominates
+  - NVDA (-1.8×10⁻⁵): Heavy HFT activity causes price reversals
+  - META (-0.2×10⁻⁵): Market makers quickly absorb order flow
+
+> **Academic Reference**: Kyle, A.S. (1985) "Continuous Auctions and Insider Trading" - λ measures adverse selection cost to market makers.
+
+---
+
+### Market Maker Market Share
+
+![Market Maker Share](plots/mm_market_share.png)
+
+**Interpretation:**
+- **Even distribution** (~12.5% each) indicates competitive market making
+- No single MM dominates → healthy market structure
+- Top 3: SIG, IMC, JUMP - all major HFT firms
+
+---
+
+### Exchange Distribution
+
+![Exchange Breakdown](plots/exchange_breakdown.png)
+
+**Interpretation:**
+- **Near-equal fragmentation** across 6 exchanges (~16.6% each)
+- IEX slightly higher (16.9%) - "speed bump" exchange gaining share
+- No monopoly → competitive best execution landscape
+
+---
+
+### Market Maker Inventory Pressure
+
+![Inventory Pressure](plots/inventory_pressure.png)
+
+**Interpretation:**
+- **Positive imbalance** (OPTIVER, CITADEL, SIG) → More bid size than ask
+  - Likely *long* inventory, willing to sell
+  
+- **Negative imbalance** (TOWER, JANE, IMC) → More ask size than bid
+  - Likely *short* inventory, willing to buy
+
+> **Trading Signal**: When all MMs show same-direction imbalance, it may predict short-term price moves.
+
+---
+
+### Intraday Profile
+
+![Intraday Profile](plots/intraday_profile.png)
+
+**Interpretation:**
+- Spread and activity patterns show typical market behavior
+- **U-shaped activity** expected: high at open/close, low at midday
+
+---
 
 ## 🎯 Key Features
 
@@ -13,24 +96,9 @@ A production-grade KDB+/q framework for analyzing bid-ask spreads, market maker 
 | **Market Maker Analysis** | Quote frequency, inventory pressure, market share |
 | **Price Impact** | Kyle's Lambda, Roll spread, Amihud illiquidity |
 | **Scalable Storage** | Date-partitioned HDB for billion+ rows |
-| **CSV Export** | Ready for Python/R visualization |
+| **Visualization** | Python plotting from CSV exports |
 
-## 📊 Sample Output
-
-```
->>> SPREAD STATISTICS BY SYMBOL:
-sym  | avgSpread  avgSpreadBps quoteCount
------| ----------------------------------
-AAPL | 0.035      1.88         10,008     
-MSFT | 0.035      0.85         10,072     
-NVDA | 0.035      0.40         9,914      
-
->>> KYLE'S LAMBDA (PRICE IMPACT):
-sym  | kyleLambda   
------| -------------
-AAPL | +0.0003      
-NVDA | -0.0047      
-```
+---
 
 ## 🚀 Quick Start
 
@@ -39,9 +107,14 @@ NVDA | -0.0047
 git clone https://github.com/AIM-IT4/KDB-Market-Microstructure-Study---Billion-Quote-Analysis.git
 cd KDB-Market-Microstructure-Study---Billion-Quote-Analysis
 
-# Run analysis (requires KDB+ installed)
+# Run KDB+ analysis (requires q installed)
 q run_analysis.q
+
+# Generate plots (requires Python + matplotlib + pandas)
+python visualize.py
 ```
+
+---
 
 ## 📁 Project Structure
 
@@ -55,52 +128,40 @@ q run_analysis.q
 ├── reports.q                 # CSV export functions
 ├── main.q                    # Entry point with API
 ├── run_analysis.q            # Standalone analysis runner
-└── output/                   # Generated CSV reports
+├── visualize.py              # Python plotting script
+├── output/                   # Generated CSV reports
+└── plots/                    # Generated visualizations
 ```
+
+---
 
 ## 🔬 Metrics Implemented
 
-### Spread Analytics
-- **Quoted Spread**: `ask - bid`
-- **Relative Spread**: `(ask - bid) / mid` in basis points
-- **TWAS**: Time-weighted average spread
-- **Effective Spread**: `2 × |trade_price - mid|`
-- **Realized Spread**: Market maker P&L proxy
+| Metric | Formula | Meaning |
+|--------|---------|---------|
+| **Quoted Spread** | `ask - bid` | Cost to cross the spread |
+| **Relative Spread** | `(ask-bid)/mid × 10000` | Spread in basis points |
+| **Kyle's Lambda** | `Cov(ΔP, Vol) / Var(Vol)` | Price impact per $ traded |
+| **Roll Spread** | `2×√(-Cov(Δpₜ, Δpₜ₋₁))` | Implied spread from autocorrelation |
+| **Inventory Pressure** | `(bidSize-askSize)/(total)` | Market maker positioning |
 
-### Advanced Microstructure
-- **Kyle's Lambda**: Price impact coefficient (λ = Cov(ΔP, Vol) / Var(Vol))
-- **Roll Spread**: Implied spread from trade autocorrelation
-- **Amihud Illiquidity**: |return| / volume ratio
-- **VPIN**: Volume-synchronized probability of informed trading
+---
 
-### Market Maker Analysis
-- Quote frequency and time at NBBO
-- Inventory pressure (bid/ask size imbalance)
-- Quote-to-trade ratio (HFT indicator)
-- Competitive dynamics and market share
-
-## 📈 Billion Quote Workflow
+## 📈 Scaling to 1 Billion Quotes
 
 ```q
-// Initialize partitioned database
+// Use partitioned database for billion+ records
 \l partdb.q
 initHdb["./hdb"]
 
-// Generate 1 billion quotes (5 days × 200M/day)
+// Generate 1B quotes (200M/day × 5 days)
 generateAndSave[200000000;2026.01.01;5]
 
 // Memory-efficient query
-data:queryDateRange[2026.01.01;2026.01.05]
-
-// Aggregated analysis
 stats:aggregateByDate[spreadStatsBySym;2026.01.01;2026.01.05]
 ```
 
-## 📋 Requirements
-
-- KDB+ 4.0+ (64-bit recommended)
-- 8GB+ RAM for 10M+ quote analysis
-- SSD for partitioned database performance
+---
 
 ## 📚 Academic References
 
@@ -108,16 +169,11 @@ stats:aggregateByDate[spreadStatsBySym;2026.01.01;2026.01.05]
 - Roll, R. (1984). "A Simple Implicit Measure of the Effective Bid-Ask Spread"
 - Amihud, Y. (2002). "Illiquidity and Stock Returns"
 
-## 🎓 Interview Topics Covered
-
-- Market microstructure theory
-- High-frequency trading metrics
-- KDB+ optimization (partitioning, attributes)
-- Production-grade q programming
+---
 
 ## 📄 License
 
-MIT License - feel free to use for learning and projects.
+MIT License - free to use for learning and projects.
 
 ## 👤 Author
 
