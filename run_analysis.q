@@ -41,8 +41,8 @@ exs:`NYSE`NASDAQ`ARCA`BATS`IEX`EDGX;
 
 basePrices:(`AAPL`MSFT`GOOGL`AMZN`META`NVDA`TSLA`JPM`BAC`GS)!185.5 410.25 175.80 185.30 520.40 875.60 248.90 195.75 35.40 480.25;
 
-n:100000;
--1 "Generating ",string[n]," quotes...";
+n:10000000;
+-1 "Generating ",string[n]," quotes (10 MILLION)...";
 
 / Generate random data
 times:.z.d + asc n?`time$24:00:00;
@@ -116,8 +116,8 @@ show flip `metric`value!(`spreadScore`depthScore`impactScore`totalScore;spreadSc
 / Save results to CSV
 -1 "\n>>> SAVING RESULTS TO CSV...";
 
-/ Create output directory
-system "mkdir output 2>nul";
+/ Create output directory (ignore if exists)
+@[system;"mkdir output";{}];
 
 / Save spread stats
 `:output/spread_stats.csv 0: csv 0: 0!spreadStats;
