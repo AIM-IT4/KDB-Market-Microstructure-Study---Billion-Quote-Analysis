@@ -41,8 +41,9 @@ exs:`NYSE`NASDAQ`ARCA`BATS`IEX`EDGX;
 
 basePrices:(`AAPL`MSFT`GOOGL`AMZN`META`NVDA`TSLA`JPM`BAC`GS)!185.5 410.25 175.80 185.30 520.40 875.60 248.90 195.75 35.40 480.25;
 
-n:10000000;
--1 "Generating ",string[n]," quotes (10 MILLION)...";
+n:100000000;
+-1 "Generating ",string[n]," quotes (100 MILLION)...";
+-1 "This will take a few minutes...";
 
 / Generate random data
 times:.z.d + asc n?`time$24:00:00;
@@ -74,6 +75,23 @@ sizes:`long$floor 0.5 * ?[sides=`B;tqAskSize;tqBidSize];
 trades:flip `time`date`sym`price`size`side`aggressor`mmid!(tq`time;tq`date;tq`sym;prices;sizes;sides;sides;tq`mmid);
 
 -1 "Generated ",string[count trades]," trades.\n";
+
+/ Save data to disk
+-1 ">>> SAVING RAW DATA TO DISK...";
+@[system;"mkdir data";{}];
+
+/ Save quotes as binary (much faster than CSV for large data)
+`:data/quotes set quotes;
+-1 "Saved: data/quotes (binary, ",string[(-22!quotes) div 1048576]," MB)";
+
+/ Save trades as binary
+`:data/trades set trades;
+-1 "Saved: data/trades (binary, ",string[(-22!trades) div 1048576]," MB)";
+
+/ Also save samples as CSV for quick inspection
+`:data/quotes_sample.csv 0: csv 0: 1000#quotes;
+`:data/trades_sample.csv 0: csv 0: 1000#trades;
+-1 "Saved: data/quotes_sample.csv, data/trades_sample.csv (first 1000 rows each)\n";
 
 / Run analysis
 -1 "============================================================";
